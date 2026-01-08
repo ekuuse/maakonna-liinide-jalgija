@@ -1,5 +1,12 @@
 {
   "dependencies": {
-    "mariadb": "^3.4.5"
+    "@types/express": "^5.0.6",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "i": "^0.3.7",
+    "mariadb": "^3.4.5",
+    "process": "^0.11.10",
+    "sequelize": "^6.37.7"
   }
 }

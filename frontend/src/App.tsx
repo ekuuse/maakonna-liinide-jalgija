@@ -62,6 +62,8 @@ const stops = [
 function App() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<string[]>([]);
+  const [busStopData, setBusStopData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const removeDiacritics = (str: string) => {
   return str
@@ -101,9 +103,31 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 };
 
+
 const handleSelect = (stop: string) => {
   setQuery(stop);
   setResults([]);
+  setBusStopData(null);
+  setError(null);
+};
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setBusStopData(null);
+  setError(null);
+  if (!query.trim()) return;
+  try {
+    const response = await fetch(`/bus/search/${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      setError(data.message || 'Bus stop not found');
+      return;
+    }
+    const data = await response.json();
+    setBusStopData(data.bustime);
+  } catch (err) {
+    setError('Server error');
+  }
 };
 
 
@@ -112,7 +136,7 @@ const handleSelect = (stop: string) => {
       <h1>bussileidja</h1>
       <div className="search-container">
         <p>Otsige bussipeatusi all olevast kastist.</p>
-        <form id="otsing" autoComplete="off">
+        <form id="otsing" autoComplete="off" onSubmit={handleSubmit}>
           <div className="input-wrapper">
             <input
               placeholder="Otsi peatusi..."
@@ -133,6 +157,13 @@ const handleSelect = (stop: string) => {
         <button type="submit" form="otsing">
           Otsi
         </button>
+        {busStopData && (
+          <div className="busstop-result">
+            <h2>Peatus: {busStopData.for}</h2>
+            <pre>{JSON.stringify(busStopData, null, 2)}</pre>
+          </div>
+        )}
+        {error && <div className="error">{error}</div>}
       </div>
     </>
   );
