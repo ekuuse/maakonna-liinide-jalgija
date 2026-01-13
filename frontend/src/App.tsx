@@ -1,72 +1,34 @@
 
-import { useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import Results from './Results';
 import './App.css';
 
-const stops = [
-  "Tartu bussijaam",
-  "Soola",
-  "Soola I",
-  "Soola II",
-  "Kesklinn I",
-  "Kesklinn II",
-  "Kesklinn III",
-  "Turu",
-  "Vabaduse pst",
-  "Raeplats",
-  "Vabadussild/Palmihoone",
-  "Hurda",
-  "Kreutzwaldi",
-  "Maaülikool",
-  "Tartu Näitused",
-  "Metsamaja",
-  "Vorbuse tee",
-  "Muide",
-  "Tiksoja",
-  "Vorbuse",
-  "Külasüda",
-  "Kummeli",
-  "Puidu",
-  "Eesti Rahva Muuseum",
-  "Lõunakeskus",
-  "Roheline park",
-  "Kesklinn IV",
-  "Kesklinn V",
-  "Kesklinn VI",
-  "Tõrvandi",
-  "Kärevere sild",
-  "Kärevere",
-  "Põlva",
-  "Otepää",
-  "Valga",
-  "Puhja",
-  "Annelinna Keskus",
-  "Variku",
-  "Tähtvere",
-  "Tähe tn",
-  "Herne",
-  "Kaubabaas",
-  "Killustiku",
-  "Kroonuaia",
-  "Laululava",
-  "Lille",
-  "Linda",
-  "Ihaste",
-  "Melissi",
-  "Mileedi",
-  "Mõisapargi",
-  "Piiri",
-  "Forseliuse",
-  "Saekoja",
-];
-
 
 function App() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<string[]>([]);
-  const [busStopData, setBusStopData] = useState<any>(null);
+  const [stops, setStops] = useState<string[]>([]);
+  const [stopFrom, setStopFrom] = useState('');
+  const [stopTo, setStopTo] = useState('');
+  const [resultsFrom, setResultsFrom] = useState<string[]>([]);
+  const [resultsTo, setResultsTo] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Fetch all stops from backend
+    const fetchStops = async () => {
+      try {
+        const response = await fetch('/bus/stops');
+        if (response.ok) {
+          const data = await response.json();
+          setStops(data.stops || []);
+        }
+      } catch (err) {
+        console.error('Error fetching stops:', err);
+      }
+    };
+    fetchStops();
+  }, []);
 
   const removeDiacritics = (str: string) => {
   return str
@@ -86,12 +48,12 @@ function App() {
     .replace(/Ü/g, 'U');
 };
 
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+const handleChangeFrom = (e: React.ChangeEvent<HTMLInputElement>) => {
   const value = e.target.value;
-  setQuery(value);
+  setStopFrom(value);
 
   if (value.trim() === '') {
-    setResults([]);
+    setResultsFrom([]);
     return;
   }
 
@@ -100,36 +62,66 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const matches = stops.filter((stop) =>
       removeDiacritics(stop.toLowerCase()).includes(normalizedQuery)
     );
-    setResults(matches);
+    setResultsFrom(matches);
   } catch (err) {
-    setResults([]);
+    setResultsFrom([]);
+  }
+};
+
+const handleChangeTo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  setStopTo(value);
+
+  if (value.trim() === '') {
+    setResultsTo([]);
+    return;
+  }
+
+  try {
+    const normalizedQuery = removeDiacritics(value.toLowerCase());
+    const matches = stops.filter((stop) =>
+      removeDiacritics(stop.toLowerCase()).includes(normalizedQuery)
+    );
+    setResultsTo(matches);
+  } catch (err) {
+    setResultsTo([]);
   }
 };
 
 
-const handleSelect = (stop: string) => {
-  setQuery(stop);
-  setResults([]);
-  setBusStopData(null);
+const handleSelectFrom = (stop: string) => {
+  setStopFrom(stop);
+  setResultsFrom([]);
+};
+
+const handleSelectTo = (stop: string) => {
+  setStopTo(stop);
+  setResultsTo([]);
   setError(null);
 };
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  setBusStopData(null);
   setError(null);
-  if (!query.trim()) return;
+  
+  if (!stopFrom.trim() || !stopTo.trim()) {
+    setError('Palun vali nii algus- kui ka lõpp-peatus');
+    return;
+  }
+  
   try {
-    const response = await fetch(`/bus/search/${encodeURIComponent(query)}`);
+    const response = await fetch(`/bus/search?stop_from=${encodeURIComponent(stopFrom)}&stop_to=${encodeURIComponent(stopTo)}`);
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      setError(data.message || 'Bus stop not found');
+      setError(data.message || 'Viga otsingu tegemisel');
       return;
     }
     const data = await response.json();
-    setBusStopData(data.bustime);
+    
+    // Navigate to results page with the data
+    navigate('/results', { state: { results: data.results, stopFrom, stopTo } });
   } catch (err) {
-    setError('Server error');
+    setError('Serveri viga');
   }
 };
 
@@ -149,31 +141,47 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <p>Otsige bussipeatusi all olevast kastist.</p>
                 <form id="otsing" autoComplete="off" onSubmit={handleSubmit}>
                   <div className="input-wrapper">
+                    <label htmlFor="stop-from">Alguspeatus:</label>
                     <input
-                      placeholder="Otsi peatusi..."
-                      value={query}
-                      onChange={handleChange}
+                      id="stop-from"
+                      placeholder="Otsi alguspeatust..."
+                      value={stopFrom}
+                      onChange={handleChangeFrom}
+                      required
                     />
-                    {results.length > 0 && (
+                    {resultsFrom.length > 0 && (
                       <ul className="autocomplete-results">
-                        {results.map((stop, idx) => (
-                          <li key={idx} onClick={() => handleSelect(stop)}>
+                        {resultsFrom.map((stop, idx) => (
+                          <li key={idx} onClick={() => handleSelectFrom(stop)}>
                             {stop}
                           </li>
                         ))}
                       </ul>
                     )}
                   </div>
-                </form>
-                <button type="submit" form="otsing">
-                  Otsi
-                </button>
-                {busStopData && (
-                  <div className="busstop-result">
-                    <h2>Peatus: {busStopData.for}</h2>
-                    <pre>{JSON.stringify(busStopData, null, 2)}</pre>
+                  <div className="input-wrapper">
+                    <label htmlFor="stop-to">Lõpppeatus:</label>
+                    <input
+                      id="stop-to"
+                      placeholder="Otsi lõpppeatust..."
+                      value={stopTo}
+                      onChange={handleChangeTo}
+                      required
+                    />
+                    {resultsTo.length > 0 && (
+                      <ul className="autocomplete-results">
+                        {resultsTo.map((stop, idx) => (
+                          <li key={idx} onClick={() => handleSelectTo(stop)}>
+                            {stop}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                )}
+                  <button type="submit">
+                    Otsi
+                  </button>
+                </form>
                 {error && <div className="error">{error}</div>}
               </div>
             </div>

@@ -3,15 +3,22 @@ const {
   Model: BusModel
 } = require('sequelize');
 module.exports = (sequelize: any, DataTypes: any) => {
-  class Bus extends BusModel {}
+  class Bus extends BusModel {
+    static associate(models: any): void {
+      this.hasMany(models.Route, {
+        foreignKey: 'bus_id',
+        as: 'routes'
+      });
+    }
+  }
   Bus.init({
-    id: {
+    bus_id: {
       allowNull: false,
       autoIncrement: true,
       primaryKey: true,
       type: DataTypes.INTEGER
     },
-    linenr: {
+    line_nr: {
       type: DataTypes.STRING,
       allowNull: false
     },
@@ -19,13 +26,15 @@ module.exports = (sequelize: any, DataTypes: any) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    route: {
+    description: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
   }, {
     sequelize,
     modelName: 'Bus',
+    freezeTableName: true,
+    timestamps: false,
   });
   return Bus;
 };
