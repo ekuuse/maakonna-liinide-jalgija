@@ -1,4 +1,7 @@
+
 import { useState } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
+import Results from './Results';
 import './App.css';
 
 const stops = [
@@ -133,38 +136,51 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <>
-      <h1>bussileidja</h1>
-      <div className="search-container">
-        <p>Otsige bussipeatusi all olevast kastist.</p>
-        <form id="otsing" autoComplete="off" onSubmit={handleSubmit}>
-          <div className="input-wrapper">
-            <input
-              placeholder="Otsi peatusi..."
-              value={query}
-              onChange={handleChange}
-            />
-            {results.length > 0 && (
-              <ul className="autocomplete-results">
-                {results.map((stop, idx) => (
-                  <li key={idx} onClick={() => handleSelect(stop)}>
-                    {stop}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </form>
-        <button type="submit" form="otsing">
-          Otsi
-        </button>
-        {busStopData && (
-          <div className="busstop-result">
-            <h2>Peatus: {busStopData.for}</h2>
-            <pre>{JSON.stringify(busStopData, null, 2)}</pre>
-          </div>
-        )}
-        {error && <div className="error">{error}</div>}
-      </div>
+      <nav style={{ marginBottom: '1rem' }}>
+        <Link to="/">Otsing</Link> | <Link to="/results">Tulemused</Link>
+      </nav>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <div>
+              <h1>bussileidja</h1>
+              <div className="search-container">
+                <p>Otsige bussipeatusi all olevast kastist.</p>
+                <form id="otsing" autoComplete="off" onSubmit={handleSubmit}>
+                  <div className="input-wrapper">
+                    <input
+                      placeholder="Otsi peatusi..."
+                      value={query}
+                      onChange={handleChange}
+                    />
+                    {results.length > 0 && (
+                      <ul className="autocomplete-results">
+                        {results.map((stop, idx) => (
+                          <li key={idx} onClick={() => handleSelect(stop)}>
+                            {stop}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </form>
+                <button type="submit" form="otsing">
+                  Otsi
+                </button>
+                {busStopData && (
+                  <div className="busstop-result">
+                    <h2>Peatus: {busStopData.for}</h2>
+                    <pre>{JSON.stringify(busStopData, null, 2)}</pre>
+                  </div>
+                )}
+                {error && <div className="error">{error}</div>}
+              </div>
+            </div>
+          }
+        />
+        <Route path="/results" element={<Results />} />
+      </Routes>
     </>
   );
 }
