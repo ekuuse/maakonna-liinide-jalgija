@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import Results from './Results';
 import './App.css';
 
@@ -30,23 +30,39 @@ function App() {
     fetchStops();
   }, []);
 
-  const removeDiacritics = (str: string) => {
-  return str
-    .normalize('NFD') // decompose letters + accents
-    .replace(/[\u0300-\u036f]/g, '') // remove accent marks
-    .replace(/š/g, 's')
-    .replace(/ž/g, 'z')
-    .replace(/Š/g, 'S')
-    .replace(/Ž/g, 'Z')
-    .replace(/õ/g, 'o')
-    .replace(/Õ/g, 'O')
-    .replace(/ä/g, 'a')
-    .replace(/Ä/g, 'A')
-    .replace(/ö/g, 'o')
-    .replace(/Ö/g, 'O')
-    .replace(/ü/g, 'u')
-    .replace(/Ü/g, 'U');
-};
+  // Fuzzy search: returns true if two strings are similar enough
+  const fuzzyMatch = (a: string, b: string) => {
+    // Lowercase and remove diacritics for both strings
+    const normalize = (str: string) => str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    a = normalize(a);
+    b = normalize(b);
+
+    // If one string contains the other, it's a match
+    if (a.includes(b) || b.includes(a)) return true;
+
+    // Levenshtein distance implementation
+    function levenshtein(s: string, t: string): number {
+      const m = s.length, n = t.length;
+      const d: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) d[i][0] = i;
+      for (let j = 0; j <= n; j++) d[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+          d[i][j] = Math.min(
+            d[i - 1][j] + 1,      // deletion
+            d[i][j - 1] + 1,      // insertion
+            d[i - 1][j - 1] + cost // substitution
+          );
+        }
+      }
+      return d[m][n];
+    }
+
+    // Allow a small Levenshtein distance (e.g., 1 or 2 for short words)
+    const maxDistance = Math.max(1, Math.floor(Math.min(a.length, b.length) / 4));
+    return levenshtein(a, b) <= maxDistance;
+  };
 
 const handleChangeFrom = (e: React.ChangeEvent<HTMLInputElement>) => {
   const value = e.target.value;
@@ -58,10 +74,7 @@ const handleChangeFrom = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 
   try {
-    const normalizedQuery = removeDiacritics(value.toLowerCase());
-    const matches = stops.filter((stop) =>
-      removeDiacritics(stop.toLowerCase()).includes(normalizedQuery)
-    );
+    const matches = stops.filter((stop) => fuzzyMatch(stop, value));
     setResultsFrom(matches);
   } catch (err) {
     setResultsFrom([]);
@@ -78,10 +91,7 @@ const handleChangeTo = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 
   try {
-    const normalizedQuery = removeDiacritics(value.toLowerCase());
-    const matches = stops.filter((stop) =>
-      removeDiacritics(stop.toLowerCase()).includes(normalizedQuery)
-    );
+    const matches = stops.filter((stop) => fuzzyMatch(stop, value));
     setResultsTo(matches);
   } catch (err) {
     setResultsTo([]);
@@ -128,15 +138,11 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <>
-      <nav style={{ marginBottom: '1rem' }}>
-        <Link to="/">Otsing</Link> | <Link to="/results">Tulemused</Link>
-      </nav>
       <Routes>
         <Route
           path="/"
           element={
             <div>
-              <h1>bussileidja</h1>
               <div className="search-container">
                 <p>Otsige bussipeatusi all olevast kastist.</p>
                 <form id="otsing" autoComplete="off" onSubmit={handleSubmit}>

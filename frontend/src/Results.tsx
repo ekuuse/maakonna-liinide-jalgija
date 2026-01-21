@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import "./Results.css";
 
@@ -25,6 +25,7 @@ interface RouteResult {
 }
 
 function Results() {
+  const navigate = useNavigate();
   const location = useLocation();
   const { results, stopFrom, stopTo } = (location.state as { results: RouteResult[], stopFrom: string, stopTo: string }) || { results: [], stopFrom: '', stopTo: '' };
   const [expandedRoutes, setExpandedRoutes] = useState<Set<number>>(new Set());
@@ -41,9 +42,16 @@ function Results() {
     });
   };
 
+  const handleBack = () => {
+    navigate('/');
+  };
+
   if (!results || results.length === 0) {
     return (
       <>
+        <button className="styledbutton" onClick={handleBack}>
+          ← Tagasi
+        </button>
         <h1>Otsingu tulemused</h1>
         <div className="maincontainer">
           <div className="results-container">
@@ -56,6 +64,9 @@ function Results() {
 
   return (
     <>
+      <button className="styledbutton" onClick={handleBack}>
+        Tagasi
+      </button>
       <h1>Otsingu tulemused</h1>
       <h3>{stopFrom} → {stopTo}</h3>
       <div className="maincontainer">
@@ -66,7 +77,11 @@ function Results() {
                 <div id="stop-info">
                   <h2>{result.departure_time} - {result.arrival_time}</h2>
                   <h3>{result.bus.name || 'N/A'} - Liin {result.bus.line_nr || 'N/A'}</h3>
-                  <p>{result.route_name} {result.direction && `(${result.direction})`}</p>
+                  <p>
+                    {result.direction === 'tagasi'
+                      ? result.route_name.split(' - ').reverse().join(' - ')
+                      : result.route_name}
+                  </p>
                 </div>
                 <div id="stop-actions">
                   <button 
