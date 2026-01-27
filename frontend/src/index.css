@@ -15,12 +15,16 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  padding: 0;
+  width: 100%;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-family: "Lexend", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 body::before {
@@ -31,7 +35,7 @@ body::before {
   width: 100vw;
   height: 100vh;
   z-index: -2;
-  background-image: linear-gradient(124deg, rgba(0, 0, 0, 0.089) 20%, rgba(19, 19, 19, 0.8) 100%),
+  background-image: linear-gradient(124deg, rgba(0, 0, 0, 0.089) 10%, rgba(19, 19, 19, 1) 100%),
     url('assets/taust.jpg');
   background-size: cover;
   background-position: center;

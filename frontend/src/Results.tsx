@@ -30,6 +30,11 @@ function Results() {
   const { results, stopFrom, stopTo } = (location.state as { results: RouteResult[], stopFrom: string, stopTo: string }) || { results: [], stopFrom: '', stopTo: '' };
   const [expandedRoutes, setExpandedRoutes] = useState<Set<number>>(new Set());
 
+  const formatTime = (time: string) => {
+    // Convert HH:MM:SS to HH:MM
+    return time.substring(0, 5);
+  };
+
   const toggleStops = (routeId: number) => {
     setExpandedRoutes(prev => {
       const newSet = new Set(prev);
@@ -75,7 +80,7 @@ function Results() {
             <div key={result.route_id}>
               <div className="results-item">
                 <div id="stop-info">
-                  <h2>{result.departure_time} - {result.arrival_time}</h2>
+                  <h2>{formatTime(result.departure_time)} - {formatTime(result.arrival_time)}</h2>
                   <h3>{result.bus.name || 'N/A'} - Liin {result.bus.line_nr || 'N/A'}</h3>
                   <p>
                     {result.direction === 'tagasi'
@@ -108,12 +113,32 @@ function Results() {
                         <tr key={idx}>
                           <td>{stop.stop_name}</td>
                           <td>{stop.platform || '-'}</td>
-                          <td>{stop.arrives}</td>
-                          <td>{stop.leaves}</td>
+                          <td>{formatTime(stop.arrives)}</td>
+                          <td>{formatTime(stop.leaves)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  {/* Mobile card layout */}
+                  {result.stops.map((stop, idx) => (
+                    <div key={idx} className="stop-card">
+                      <div className="stop-card-name">{stop.stop_name}</div>
+                      <div className="stop-card-details">
+                        <div className="stop-card-detail">
+                          <span className="stop-card-label">Platvorm</span>
+                          <span className="stop-card-value">{stop.platform || '-'}</span>
+                        </div>
+                        <div className="stop-card-detail">
+                          <span className="stop-card-label">Saabub</span>
+                          <span className="stop-card-value">{formatTime(stop.arrives)}</span>
+                        </div>
+                        <div className="stop-card-detail">
+                          <span className="stop-card-label">Väljub</span>
+                          <span className="stop-card-value">{formatTime(stop.leaves)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
