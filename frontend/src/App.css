@@ -49,6 +49,7 @@
   font-family: "Lexend", sans-serif;
   box-sizing: border-box;
   height: 40px;
+  color: white;
 }
 
 .search-container input:focus {
